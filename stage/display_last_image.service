@@ -1,0 +1,13 @@
+[Unit]
+Description=Display Last image at Startup
+After=graphical.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=pi
+Environment=DISPLAY=:0
+ExecStart=/bin/bash /home/pi/startup_display_last_image.sh
+
+[Install]
+WantedBy=graphical.target

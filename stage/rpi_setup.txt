@@ -1,0 +1,241 @@
+Raspberry Pi Zero 2 w Setup 
+Sac à main 
+
+1. Installer Raspberry Pi OS 64-bits (tutoriels youtubes) 
+
+2. Changer la taille RAM 
+    sudo nano /etc/dphys-swapfile
+		CONF_SWAPSIZE=100	=>	CONF_SWAPSIZE=2048
+    sudo reboot
+	
+	#si probleme bizzare où résolution très petite 
+	sudo nano /boot/firmware/cmdline.txt
+		video=HDMI-A-1:1920x1080M@60D #ajouter au debut de la ligne 
+	
+3. Mises-à-jours et packages
+   sudo apt-get update
+   sudo apt-get upgrade
+   apt install bluez-obexd
+   apt-get install feh
+   apt-get install inotify-tools
+   
+4. Recevoir des images
+    sudo nano /etc/dbus-1/system.d/bluetooth.conf
+		<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+
+  <!-- ../system.conf have denied everything, so we just punch some holes -->
+
+  <policy user="root">
+    <allow own="org.bluez"/>
+    <allow send_destination="org.bluez"/>
+    <allow send_interface="org.bluez.AdvertisementMonitor1"/>
+    <allow send_interface="org.bluez.Agent1"/>
+    <allow send_interface="org.bluez.MediaEndpoint1"/>
+    <allow send_interface="org.bluez.MediaPlayer1"/>
+    <allow send_interface="org.bluez.Profile1"/>
+    <allow send_interface="org.bluez.GattCharacteristic1"/>
+    <allow send_interface="org.bluez.GattDescriptor1"/>
+    <allow send_interface="org.bluez.LEAdvertisement1"/>
+    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
+    <allow send_interface="org.freedesktop.DBus.Properties"/>
+    <allow send_interface="org.mpris.MediaPlayer2.Player"/>
+    <allow own="org.bluez.obex"/>
+    <allow send_destination="org.bluez.obex"/>
+    <allow send_interface="org.bluez.obex.Client1"/>
+    <allow send_interface="org.bluez.obex.Session1"/>
+    <allow send_interface="org.bluez.obex.Transfer1"/>
+    <allow send_interface="org.bluez.obex.ObjectPush1"/> 
+  </policy>
+
+  <policy user="pi">
+    <allow own="org.bluez.obex"/>
+    <allow send_destination="org.bluez.obex"/>
+    <allow send_interface="org.bluez.obex.Client1"/>
+    <allow send_interface="org.bluez.obex.Session1"/>
+    <allow send_interface="org.bluez.obex.Transfer1"/>
+    <allow send_interface="org.bluez.obex.ObjectPush1"/> 
+  </policy>
+
+  <!-- Allow users of the bluetooth group to communicate -->
+  <policy group="bluetooth">
+    <allow send_destination="org.bluez"/>
+  </policy>
+
+  <policy context="default">
+    <allow send_destination="org.bluez"/>
+  </policy>
+
+</busconfig>
+
+
+    sudo nano /etc/systemd/system/obexd.service
+		[Unit]
+		Description=OBEX Daemon for Bluetooth file transfers
+		After=bluetooth.service
+		Requires=bluetooth.service
+
+		[Service]
+		User=pi
+		Group=pi
+		Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+		ExecStart=/usr/libexec/bluetooth/obexd -n -a -r /home/pi/Pictures
+		Restart=always
+
+		[Install]
+		WantedBy=multi-user.target
+	sudo systemctl daemon-reload
+	sudo systemctl enable obexd.service
+	sudo systemctl start obexd.service
+	sudo systemctl status obexd.service
+	
+5. Surveiller un dossier
+    nano watch_for_images.sh
+#!/bin/bash
+
+# Définir la variable d'environnement DISPLAY pour permettre l'affichage graphique
+export DISPLAY=:0
+
+# Définir le répertoire à surveiller
+WATCH_DIR="/home/pi/Pictures"
+
+# Utiliser inotifywait pour surveiller les créations et déplacements de fichiers dans le répertoire WATCH_DIR
+inotifywait -m -e create -e moved_to --format '%w%f' "${WATCH_DIR}" | while read NEWFILE
+do
+    # Enregistrer un message dans le fichier de log lorsqu'un changement est détecté
+    echo "Changement détecté dans le fichier : ${NEWFILE}" >> /home/pi/inotify_log.txt
+    
+    # Vérifier si le fichier détecté est une image (jpg, jpeg, png, bmp, gif)
+    if [[ "${NEWFILE}" =~ \.(jpg|jpeg|png|bmp|gif)$ ]]; then
+        # Enregistrer un message dans le fichier de log pour indiquer que le fichier image est en cours de traitement
+        echo "Traitement du fichier image : ${NEWFILE}" >> /home/pi/inotify_log.txt
+        
+        # Attendre 2 secondes pour s'assurer que le fichier est complètement écrit
+        sleep 2
+        
+        # Modifier les permissions du fichier pour qu'il soit accessible en lecture
+        chmod 644 "${NEWFILE}"
+        
+        # Afficher l'image en plein écran sans pointeur de souris à l'aide de feh
+        feh --fullscreen --hide-pointer "${NEWFILE}" &
+        
+        # Enregistrer la commande feh dans un fichier pour permettre de relancer l'image à la prochaine mise sous tension
+        echo "feh --fullscreen --hide-pointer '${NEWFILE}' &" > /home/pi/last_feh_command.sh
+    fi
+done
+
+	sudo nano /etc/systemd/system/watch_for_images.service
+		[Unit]
+		Description=Watch for new images and display them
+		After=network.target
+
+		[Service]
+		Type=simple
+		User=pi
+		ExecStart=/bin/bash /home/pi/watch_for_images.sh
+		Restart=always
+
+		[Install]
+		WantedBy=multi-user.target
+		
+	sudo systemctl daemon-reload
+	sudo systemctl enable watch_for_images.service
+	sudo systemctl start watch_for_images.service
+
+	sudo systemctl status watch_for_images.service
+	
+6.  Logo/dernier image affiché (faut effacer last_feh_command.sh pour la première demarrage)
+	nano startup_display_last_image.sh
+#!/bin/bash
+
+# Définir les chemins des fichiers de log, de la dernière commande feh, et de l'image par défaut
+LOG_FILE="/home/pi/display_service_log.txt"
+LAST_FEH_COMMAND="/home/pi/last_feh_command.sh"
+DEFAULT_IMAGE="/home/pi/peuty_gold.jpg"
+
+# Ajouter une entrée dans le fichier de log indiquant le démarrage du service
+echo "Démarrage du service display_last_image" >> $LOG_FILE
+
+# Définir la variable d'environnement DISPLAY pour permettre l'affichage graphique
+export DISPLAY=:0
+
+# Vérifier si le fichier de la dernière commande feh existe
+if [ -f "$LAST_FEH_COMMAND" ]; then
+    # Ajouter une entrée dans le fichier de log indiquant que la dernière commande feh est en cours d'exécution
+    echo "Exécution de la dernière commande feh" >> "$LOG_FILE"
+    
+    # Extraire le chemin de l'image de la dernière commande feh
+    IMAGE_PATH=$(grep -oP '(?<=feh --fullscreen --hide-pointer ).*(?= &)' "$LAST_FEH_COMMAND" | xargs)
+    
+    # Ajouter une entrée dans le fichier de log avec le chemin de l'image extrait
+    echo "Chemin de l'image extrait : '$IMAGE_PATH'" >> "$LOG_FILE"
+    
+    # Vérifier si le chemin de l'image est non vide et si le fichier existe
+    if [ -n "$IMAGE_PATH" ] && [ -f "$IMAGE_PATH" ]; then
+        # Ajouter une entrée dans le fichier de log indiquant que le chemin de l'image a été trouvé
+        echo "Chemin de l'image trouvé : '$IMAGE_PATH'" >> "$LOG_FILE"
+        
+        # Exécuter la dernière commande feh pour afficher l'image
+        bash "$LAST_FEH_COMMAND"
+    else
+        # Ajouter une entrée dans le fichier de log indiquant que la dernière image n'a pas été trouvée ou a été supprimée, et afficher l'image par défaut
+        echo "Dernière image non trouvée ou supprimée, affichage de l'image par défaut" >> "$LOG_FILE"
+        feh --fullscreen --hide-pointer "$DEFAULT_IMAGE" &
+    fi
+else
+    # Ajouter une entrée dans le fichier de log indiquant que l'image par défaut est affichée
+    echo "Affichage de l'image par défaut" >> "$LOG_FILE"
+    feh --fullscreen --hide-pointer "$DEFAULT_IMAGE" &
+fi
+
+
+	cp -r /etc/xdg/lxsession ~/.config/
+	echo "@/home/pi/startup_display_last_image.sh" >> /home/pi/.config/lxsession/LXDE-pi/autostart
+	
+7.	Splash screen 
+	sudo nano /boot/firmware/config.txt
+		disable_splash=1
+		
+	sudo nano /boot/firmware/cmdline.txt
+		console=serial0,115200 console=tty3 root=PARTUUID=d6226580-02 rootfstype=ext4 fsck.repair=yes rootwait quiet splash plymouth.ignore-serial-consoles loglevel=0 vt.global_cursor_default=0
+
+	sudo nano /etc/lightdm/lightdm.conf
+		[Seat:*]
+		xserver-command=X -nocursor
+
+	
+	sudo mkdir /usr/share/plymouth/themes/mytheme
+	sudo cp /path/to/your/image.png /usr/share/plymouth/themes/mytheme/splash.png
+	sudo nano /usr/share/plymouth/themes/mytheme/mytheme.plymouth
+		[Plymouth Theme]
+		Name=MyTheme
+		Description=Custom splash screen
+		ModuleName=script
+
+		[script]
+		ImageDir=/usr/share/plymouth/themes/mytheme
+		ScriptFile=/usr/share/plymouth/themes/mytheme/mytheme.script
+		
+	sudo nano /usr/share/plymouth/themes/mytheme/mytheme.script
+		wallpaper_image = Image("splash.png");
+		screen_width = Window.GetWidth();
+		screen_height = Window.GetHeight();
+		resized_image = wallpaper_image.Scale(screen_width, screen_height);
+		wallpaper_sprite = Sprite(resized_image);
+		wallpaper_sprite.SetZ(-100);
+		
+	sudo plymouth-set-default-theme -R mytheme
+	
+8. Eteindre/Allumer les écrans 
+	sudo nano /boot/firmware/config.txt
+		dtoverlay=vc4-kms-v3d	=>	dtoverlay=vc4-fkms-v3d
+	sudo reboot
+	vcgencmd display_power 0 #éteindre l'écran
+	vcgencmd display_power 1 #allumer l'écran
+	
+9. L'écran ne s'endort pas 
+	sudo apt-get install xscreensaver
+	après faut le desactivé 
+	
+10. 

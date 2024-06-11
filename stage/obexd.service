@@ -1,0 +1,14 @@
+[Unit]
+Description=OBEX Daemon for Bluetooth file transfers
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+User=pi
+Group=pi
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+ExecStart=/usr/libexec/bluetooth/obexd -n -a -r /home/pi/Pictures
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
