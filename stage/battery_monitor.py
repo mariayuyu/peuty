@@ -1,46 +1,39 @@
-import os
+import smbus2
 import time
 
-BATTERY_CAPACITY_MAH = 10000 
-AVERAGE_CURRENT_DRAW_MA = 1000
-LOW_BATTERY_THRESHOLD = 20
-CRITICAL_BATTERY_THRESHOLD = 5
-BRIGHTNESS_LEVEL_LOW = 0.2
+# I2C address of the MAX1704X
+MAX1704X_ADDRESS = 0x36
 
-def get_system_uptime():
-    with open('/proc/uptime', 'r') as f:
-        uptime_seconds = float(f.readline().split()[0])
-    return uptime_seconds
+# Registers
+VCELL_REGISTER = 0x02
+SOC_REGISTER = 0x04
 
-def calculate_remaining_battery_percentage(uptime_seconds, battery_capacity_mah, average_current_draw_ma):
-    uptime_hours = uptime_seconds / 3600
-    energy_used_mah = uptime_hours * average_current_draw_ma
-    remaining_battery_mah = battery_capacity_mah - energy_used_mah
-    remaining_battery_percentage = (remaining_battery_mah / battery_capacity_mah) * 100
-    return max(0, min(100, remaining_battery_percentage))
-	
-def adjust_brightness(level):
-    os.system(f"xrandr --output HDMI-1 --brightness {level}")
-	
-def shutdown_system():
-    os.system("sudo shutdown -h now")
-	
+# Initialize I2C (SMBus)
+bus = smbus2.SMBus(1)
+
+def read_vcell():
+    # Read the voltage from the VCELL register (0x02)
+    data = bus.read_i2c_block_data(MAX1704X_ADDRESS, VCELL_REGISTER, 2)
+    # Convert the data to a 12-bit value
+    vcell = (data[0] << 4) | (data[1] >> 4)
+    # Convert to voltage in mV (1 unit = 1.25 mV)
+    voltage = vcell * 1.25 / 1000.0
+    return voltage
+
+def read_soc():
+    # Read the state of charge (SOC) from the SOC register (0x04)
+    data = bus.read_i2c_block_data(MAX1704X_ADDRESS, SOC_REGISTER, 2)
+    # Convert the data to a percentage
+    soc = data[0] + data[1] / 256.0
+    return soc
+
 def main():
     while True:
-        uptime_seconds = get_system_uptime()
-        remaining_battery_percentage = calculate_remaining_battery_percentage(
-            uptime_seconds, BATTERY_CAPACITY_MAH, AVERAGE_CURRENT_DRAW_MA)
-        
-        print(f"Remaining battery: {remaining_battery_percentage:.2f}%")
-        
-        if remaining_battery_percentage < CRITICAL_BATTERY_THRESHOLD:
-            print("Critical battery level reached. Shutting down.")
-            shutdown_system()
-        elif remaining_battery_percentage < LOW_BATTERY_THRESHOLD:
-            print("Low battery level. Reducing brightness.")
-            adjust_brightness(BRIGHTNESS_LEVEL_LOW)
-        
-        time.sleep(30)  # Print the battery percentage every 30 seconds
+        voltage = read_vcell()
+        soc = read_soc()
+        print(f"Voltage: {voltage:.2f} V")
+        print(f"State of Charge: {soc:.2f} %")
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
