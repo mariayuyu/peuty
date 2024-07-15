@@ -1,6 +1,8 @@
 Raspberry Pi Zero 2 w Setup 
 Sac à main 
 
+INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD 
+
 1. Installer Raspberry Pi OS 64-bits (tutoriels youtubes) 
 
 2. Changer la taille RAM 
@@ -238,4 +240,9 @@ fi
 	sudo apt-get install xscreensaver
 	après faut le desactivé 
 	
-10. 
+10. clique droite sur le panel -> panel settings -> notifications off 
+							   -> panel settings -> hide panel -> 0 pxl 
+							
+11. sudo apt remove python3-rpi.gpio
+
+sudo apt install python3-rpi-lgpio
