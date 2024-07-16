@@ -1,12 +1,33 @@
 Raspberry Pi Zero 2 w Setup 
 Sac à main 
 
-INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD 
+* connect as : pi
+  password : 123
 
-connect as : pi
-password : 123
+* Pour envoyer les images il faut ajouter "_APPID" à la fin du nom de l'image. Peut être changer dans le fichier watch_for_images_sec.sh variable APP_IDENFIER
 
-Pour envoyer les images il faut ajouter "_APPID" à la fin du nom de l'image. Peut être changer dans le fichier watch_for_images_sec.sh
+* Pour ajouter un wifi il faut d'abord brancher la carte SD à l'ordinateur, puis modifier le fichier wpa_supplicant.conf 
+
+* Fonctionalités des programmes dans ce hub : 
+
+* Cablage :     VCC -> 3.3V      SCL -> SCL	SDA -> SDA	GND -> GROUND		i2cdetect -y 1 dans le terminal pour voir si le composant est bien connecté 
+		bouton : VCC -> 3.3V	GND -> GROUND	S -> GPIO 17
+
+* Avant le premier allumage, il faut effacer le fichier last_feh_command.sh pour que le logo s'affiche et non pas le dernier image envoyé
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+button.py :	Lance l'appairage bluetooth si bouton appuyé
+button3.py :	Lance l'appairage bluetooth si bouton appuyé, eteint le raspberry pi si reste appuyé pendant plus de 2sec (modifiable, vairable SEUIL_APPUI)
+screens.py : 	BESOIN D'UN ENVINRONMENT VIRTUEL ($ source /home/pi/myenv/bin/activate pour l'activer) Eteint les écrans si l'accéléromètre ne bouge pas après un temps donné à l'exécution, allume les écrans dès que il bouge
+battery.py : 	Affiche le niveau et le voltage de la batterie dans le terminal 
+pair_device_dbus.py : 	L'appairage bluetooth pour un temps donné (modifiable dans le fichier) 
+temperature_monitor.py : 	Surveille la témperature du CPU, si dépasse 80° le raspberry va s'eteindre (code ne se lance pas encore au démarrage, faut créer fichier systemd)
+watch_for_images.sh :	Affiche l'image envoyé, efface l'image qui se termine pas avec _APPID
+startup_display_last_image.sh :	Au démarrage du raspberry, affiche le dernier image envoye, ou le logo si le dernier image envoyé n'existe pas 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------- INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD ----------------------------------------------------------------
 
 1. Installer Raspberry Pi OS 64-bits (tutoriels youtubes) 
 
@@ -168,5 +189,6 @@ FICHIER DANS CE HUB
 clique droite sur le panel -> panel settings -> notifications off 
 							   -> panel settings -> hide panel -> 0 pxl 
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 							
