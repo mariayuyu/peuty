@@ -3,6 +3,11 @@ Sac à main
 
 INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD 
 
+connect as : pi
+password : 123
+
+Pour envoyer les images il faut ajouter "_APPID" à la fin du nom de l'image. Peut être changer dans le fichier watch_for_images_sec.sh
+
 1. Installer Raspberry Pi OS 64-bits (tutoriels youtubes) 
 
 2. Changer la taille RAM 
@@ -20,6 +25,8 @@ INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD
    apt install bluez-obexd
    apt-get install feh
    apt-get install inotify-tools
+   sudo apt remove python3-rpi.gpio
+   sudo apt install python3-rpi-lgpio
    
 4. Recevoir des images
     sudo nano /etc/dbus-1/system.d/bluetooth.conf
@@ -94,52 +101,10 @@ INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD
 	
 5. Surveiller un dossier
     nano watch_for_images.sh
-#!/bin/bash
-
-# Définir la variable d'environnement DISPLAY pour permettre l'affichage graphique
-export DISPLAY=:0
-
-# Définir le répertoire à surveiller
-WATCH_DIR="/home/pi/Pictures"
-
-# Utiliser inotifywait pour surveiller les créations et déplacements de fichiers dans le répertoire WATCH_DIR
-inotifywait -m -e create -e moved_to --format '%w%f' "${WATCH_DIR}" | while read NEWFILE
-do
-    # Enregistrer un message dans le fichier de log lorsqu'un changement est détecté
-    echo "Changement détecté dans le fichier : ${NEWFILE}" >> /home/pi/inotify_log.txt
-    
-    # Vérifier si le fichier détecté est une image (jpg, jpeg, png, bmp, gif)
-    if [[ "${NEWFILE}" =~ \.(jpg|jpeg|png|bmp|gif)$ ]]; then
-        # Enregistrer un message dans le fichier de log pour indiquer que le fichier image est en cours de traitement
-        echo "Traitement du fichier image : ${NEWFILE}" >> /home/pi/inotify_log.txt
-        
-        # Attendre 2 secondes pour s'assurer que le fichier est complètement écrit
-        sleep 2
-        
-        # Modifier les permissions du fichier pour qu'il soit accessible en lecture
-        chmod 644 "${NEWFILE}"
-        
-        # Afficher l'image en plein écran sans pointeur de souris à l'aide de feh
-        feh --fullscreen --hide-pointer "${NEWFILE}" &
-        
-        # Enregistrer la commande feh dans un fichier pour permettre de relancer l'image à la prochaine mise sous tension
-        echo "feh --fullscreen --hide-pointer '${NEWFILE}' &" > /home/pi/last_feh_command.sh
-    fi
-done
+FICHIER DANS CE HUB
 
 	sudo nano /etc/systemd/system/watch_for_images.service
-		[Unit]
-		Description=Watch for new images and display them
-		After=network.target
-
-		[Service]
-		Type=simple
-		User=pi
-		ExecStart=/bin/bash /home/pi/watch_for_images.sh
-		Restart=always
-
-		[Install]
-		WantedBy=multi-user.target
+		FICHIER DANS CE HUB
 		
 	sudo systemctl daemon-reload
 	sudo systemctl enable watch_for_images.service
@@ -149,48 +114,7 @@ done
 	
 6.  Logo/dernier image affiché (faut effacer last_feh_command.sh pour la première demarrage)
 	nano startup_display_last_image.sh
-#!/bin/bash
-
-# Définir les chemins des fichiers de log, de la dernière commande feh, et de l'image par défaut
-LOG_FILE="/home/pi/display_service_log.txt"
-LAST_FEH_COMMAND="/home/pi/last_feh_command.sh"
-DEFAULT_IMAGE="/home/pi/peuty_gold.jpg"
-
-# Ajouter une entrée dans le fichier de log indiquant le démarrage du service
-echo "Démarrage du service display_last_image" >> $LOG_FILE
-
-# Définir la variable d'environnement DISPLAY pour permettre l'affichage graphique
-export DISPLAY=:0
-
-# Vérifier si le fichier de la dernière commande feh existe
-if [ -f "$LAST_FEH_COMMAND" ]; then
-    # Ajouter une entrée dans le fichier de log indiquant que la dernière commande feh est en cours d'exécution
-    echo "Exécution de la dernière commande feh" >> "$LOG_FILE"
-    
-    # Extraire le chemin de l'image de la dernière commande feh
-    IMAGE_PATH=$(grep -oP '(?<=feh --fullscreen --hide-pointer ).*(?= &)' "$LAST_FEH_COMMAND" | xargs)
-    
-    # Ajouter une entrée dans le fichier de log avec le chemin de l'image extrait
-    echo "Chemin de l'image extrait : '$IMAGE_PATH'" >> "$LOG_FILE"
-    
-    # Vérifier si le chemin de l'image est non vide et si le fichier existe
-    if [ -n "$IMAGE_PATH" ] && [ -f "$IMAGE_PATH" ]; then
-        # Ajouter une entrée dans le fichier de log indiquant que le chemin de l'image a été trouvé
-        echo "Chemin de l'image trouvé : '$IMAGE_PATH'" >> "$LOG_FILE"
-        
-        # Exécuter la dernière commande feh pour afficher l'image
-        bash "$LAST_FEH_COMMAND"
-    else
-        # Ajouter une entrée dans le fichier de log indiquant que la dernière image n'a pas été trouvée ou a été supprimée, et afficher l'image par défaut
-        echo "Dernière image non trouvée ou supprimée, affichage de l'image par défaut" >> "$LOG_FILE"
-        feh --fullscreen --hide-pointer "$DEFAULT_IMAGE" &
-    fi
-else
-    # Ajouter une entrée dans le fichier de log indiquant que l'image par défaut est affichée
-    echo "Affichage de l'image par défaut" >> "$LOG_FILE"
-    feh --fullscreen --hide-pointer "$DEFAULT_IMAGE" &
-fi
-
+FICHIER DANS CE HUB
 
 	cp -r /etc/xdg/lxsession ~/.config/
 	echo "@/home/pi/startup_display_last_image.sh" >> /home/pi/.config/lxsession/LXDE-pi/autostart
@@ -240,9 +164,9 @@ fi
 	sudo apt-get install xscreensaver
 	après faut le desactivé 
 	
-10. clique droite sur le panel -> panel settings -> notifications off 
+10. Cacher le panel
+clique droite sur le panel -> panel settings -> notifications off 
 							   -> panel settings -> hide panel -> 0 pxl 
-							
-11. sudo apt remove python3-rpi.gpio
 
-sudo apt install python3-rpi-lgpio
+
+							
