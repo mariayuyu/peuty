@@ -15,6 +15,8 @@ Sac à main
 
 * .bash -> .sh 
 
+* Tutoriel en ligne "dupliquer carte SD raspberry pi", j'ai utilisé Win32DiskImager
+
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 button.py :	Lance l'appairage bluetooth si bouton appuyé (code ne se lance pas encore au démarrage, faut créer fichier systemd)
@@ -27,7 +29,7 @@ watch_for_images.sh :	Affiche l'image envoyé, efface l'image qui se termine pas
 startup_display_last_image.sh :	Au démarrage du raspberry, affiche le dernier image envoye, ou le logo si le dernier image envoyé n'existe pas 
 .service :	Fichiers systemd dans le dossier /etc/systemd/system/ pour que le fichier donné s'exécute lorsque le raspberry demarre 
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 --------------------------------------------------- INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD ----------------------------------------------------------------
 
 1. Installer Raspberry Pi OS 64-bits (tutoriels youtubes) 
