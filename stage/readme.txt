@@ -28,7 +28,7 @@ temperature_monitor.py : 	Surveille la témperature du CPU, si dépasse 80° le 
 watch_for_images.sh :	Affiche l'image envoyé, efface l'image qui se termine pas avec _APPID
 startup_display_last_image.sh :	Au démarrage du raspberry, affiche le dernier image envoye, ou le logo si le dernier image envoyé n'existe pas 
 .service :	Fichiers systemd dans le dossier /etc/systemd/system/ pour que le fichier donné s'exécute lorsque le raspberry demarre 
-
+rpi_cablage.jpg, rpi_cablage.jpg
 
 --------------------------------------------------- INCOMPLETE, MIEUX DE DUPLIQUER LA CARTE SD ----------------------------------------------------------------
 
